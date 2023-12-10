@@ -1,6 +1,7 @@
 const express = require("express")
 const mysql = require("mysql")
 const cors = require('cors')
+const jwt = require('jsonwebtoken');
 
 
 const app = express()
@@ -50,28 +51,31 @@ app.post("/signup", (req, res) => {
 
 })
 
+
+
 app.post("/Login", (req, res) => {
     const sql = "SELECT * FROM customer WHERE username=? AND password=?";
     db.query(sql, [req.body.username, req.body.password], (err, data) => {
         if (err) {
-            console.log(err)
-            return res.json(err)
+            console.log(err);
+            return res.status(500).json({ error: "Internal Server Error" });
         }
-        if (data.length > 0) {
 
-            console.log(res)
+        if (data.length > 0) {
+            // User found, generate a token
+            const token = jwt.sign({ userId: data[0].id }, 'your-secret-key', { expiresIn: '1h' });
+console.log(data);
             return res.json({
                 status: "Success",
-                id: data[0].id
-            })
-
+                id: data[0].ID,
+                token: token
+            });
         } else {
-            // console.log(data)
-            return res.status(404).json("User Not Found")
+            return res.status(404).json("User Not Found");
         }
+    });
+});
 
-    })
-})
 app.get("/:id", (req, res) => {
     const id = req.params.id
     const sql = `SELECT * FROM customer WHERE ID='${id}'`;
@@ -83,7 +87,7 @@ app.get("/:id", (req, res) => {
         } else if (data.length > 0) {
             // console.log(data)
             return res.json({
-                tasks: data
+                user: data
             })
         } else {
             return res.status(404).json("User Not Found")
